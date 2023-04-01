@@ -27,13 +27,9 @@ export class CorsFunctionConstruct extends Construct {
 
         const ssmPolicy = new PolicyStatement({
             resources: [
-                `arn:aws:ssm:${props.region}:${props.accountNumber}:us-west-2:parameter/cors/*`,
+                `arn:aws:ssm:${props.region}:${props.accountNumber}:parameter/cors/ALLOWED_ORIGINS`,
             ],
-            actions: [
-                "ssm:GetParametersByPath",
-                "ssm:GetParameters",
-                "ssm:GetParameter",
-            ],
+            actions: ["ssm:GetParameters", "ssm:GetParameter"],
             effect: Effect.ALLOW,
         });
 

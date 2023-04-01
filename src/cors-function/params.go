@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -19,7 +20,7 @@ type Parameter struct {
 // ParameterFetcher interface for dealing with parameter retrieval
 type ParameterFetcher interface {
 	Initialize(context.Context, string) error
-	GetParameterByName(context.Context, string, string) *Parameter
+	GetParameterByName(context.Context, string, string) (*Parameter, error)
 }
 
 // AwsParameterFetcher implements the Parameter Fetcher as it relates to AWS
@@ -48,47 +49,48 @@ func (a *AwsParameterFetcher) Initialize(ctx context.Context, path string) error
 		return err
 	}
 
-	var input = &ssm.GetParametersByPathInput{
-		Path:           aws.String(path),
+	var input = &ssm.GetParameterInput{
+		Name:           aws.String(path),
 		WithDecryption: aws.Bool(true),
 	}
 
 	ssmClient := ssm.NewFromConfig(cfg)
 
-	req, err := ssmClient.GetParametersByPath(ctx, input)
+	req, err := ssmClient.GetParameter(ctx, input)
 
 	if err != nil {
 		return err
 	}
 
-	for _, p := range req.Parameters {
-		split := strings.Split(*p.Name, "/")
-		name := strings.ToUpper(split[len(split)-1])
+	split := strings.Split(*req.Parameter.Name, "/")
+	name := strings.ToUpper(split[len(split)-1])
 
-		newParam := Parameter{
-			Name:  name,
-			Value: *p.Value,
-		}
-		log.WithFields(log.Fields{
-			"parameter": newParam}).Debug("Adding in new parameter")
-		a.Parameters = append(a.Parameters, newParam)
+	newParam := Parameter{
+		Name:  name,
+		Value: *req.Parameter.Value,
 	}
+	log.WithFields(log.Fields{
+		"parameter": newParam}).Debug("Adding in new parameter")
+	a.Parameters = append(a.Parameters, newParam)
 
 	return nil
 }
 
 // GetParameterByName returns a pointer to the Parameter
 // as found by the Name property
-func (a *AwsParameterFetcher) GetParameterByName(ctx context.Context, path string, name string) *Parameter {
+func (a *AwsParameterFetcher) GetParameterByName(ctx context.Context, path string, name string) (*Parameter, error) {
 	if len(a.Parameters) == 0 {
-		a.Initialize(ctx, path)
+		err := a.Initialize(ctx, fmt.Sprintf("%s/%s", path, name))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for _, p := range a.Parameters {
 		if strings.EqualFold(p.Name, name) {
-			return &p
+			return &p, nil
 		}
 	}
 
-	return nil
+	return nil, nil
 }

@@ -3,6 +3,7 @@ import { Construct } from "constructs";
 import { CorsFunctionConstruct } from "./functions/cors-function-construct";
 import CorsRoleConstruct from "./iam/cors-role-contruct";
 import SystemManagerConstruct from "./parameter/system-manager-construct";
+import { ApiGatewayConstruct } from "./api/api-gateway-construct";
 
 export class MainStack extends Stack {
     constructor(scope: Construct, id: string, props: StackProps) {
@@ -15,13 +16,17 @@ export class MainStack extends Stack {
 
         const corsFunc = new CorsFunctionConstruct(this, "CorsFunction", {
             version: version,
-            parameterPath: parameter.ParameterPath,
             region: this.region,
             accountNumber: this.account,
         });
 
-        new CorsRoleConstruct(this, "CorsRole", {
+        const corsRole = new CorsRoleConstruct(this, "CorsRole", {
             func: corsFunc.CorsFunc,
+        });
+
+        new ApiGatewayConstruct(this, "APIGw", {
+            func: corsFunc.CorsFunc,
+            role: corsRole.Role,
         });
     }
 }

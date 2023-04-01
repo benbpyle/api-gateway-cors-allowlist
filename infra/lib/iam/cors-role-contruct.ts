@@ -13,15 +13,21 @@ interface CorsRoleProps {
 }
 
 export default class CorsRoleConstruct extends Construct {
+    private readonly _apiRole: Role;
+
+    get Role(): Role {
+        return this._apiRole;
+    }
+
     constructor(scope: Construct, id: string, props: CorsRoleProps) {
         super(scope, id);
 
-        const apiRole = new Role(scope, "apiRole", {
+        this._apiRole = new Role(scope, "apiRole", {
             roleName: "ApiGatewayCorsInvoke",
             assumedBy: new ServicePrincipal("apigateway.amazonaws.com"),
         });
 
-        apiRole.addToPolicy(
+        this._apiRole.addToPolicy(
             new PolicyStatement({
                 resources: [props.func.functionArn],
                 actions: ["lambda:InvokeFunction"],

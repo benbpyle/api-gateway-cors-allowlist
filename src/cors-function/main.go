@@ -50,14 +50,26 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		"path":     request.Path,
 		"resource": request.Resource,
 	}).Debug("Printing path and resource")
-	corsParameter := ssmClient.GetParameterByName(ctx, "/cors", "ALLOWED_ORIGINS")
+	corsParameter, err := ssmClient.GetParameterByName(ctx, "/cors", "ALLOWED_ORIGINS")
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err": err,
+		}).Error("Could not fetch parameters")
+		return events.APIGatewayProxyResponse{
+			StatusCode: 500,
+		}, nil
+	}
 
 	var allowedOrigins []string
 
-	err := json.Unmarshal([]byte(corsParameter.Value), &allowedOrigins)
+	err = json.Unmarshal([]byte(corsParameter.Value), &allowedOrigins)
 
 	if err != nil {
-		log.Error("Could not parse /cors/ALLOWED_ORIGINS. FATAL.")
+		log.WithFields(log.Fields{
+			"err":   err,
+			"value": corsParameter.Value,
+		}).Error("Could not parse /cors/ALLOWED_ORIGINS. FATAL.")
 		return events.APIGatewayProxyResponse{
 			StatusCode: 500,
 		}, nil
