@@ -1,5 +1,7 @@
 # API Gateway CORS Whitelist
 
+Repository supports the article writte at [Binaryheap](https://www.binaryheap.com/cross-origin-whitelist-with-api-gateway/)
+
 ![Architecture](./CORS.png)
 
 This code demonstrates how to create a whitelist of domains that can be validated when CORS Pre-flight requests are made.
